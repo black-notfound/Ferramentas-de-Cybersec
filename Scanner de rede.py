@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 from scapy.layers.l2 import ARP, Ether
 from scapy.sendrecv import srp
@@ -37,6 +36,29 @@ def escanear_portas(ip):
     return portas_abertas
 
 
+def escanear_vulnerabilidades(ip):
+    """Escaneia vulnerabilidades conhecidas em um IP específico usando Nmap."""
+    scanner = nmap.PortScanner()
+    try:
+        print(f"\nEscaneando vulnerabilidades no IP {ip}...")
+        scanner.scan(ip, arguments='--script vuln')  # Script de vulnerabilidades do Nmap
+        if ip in scanner.all_hosts():
+            print(f"Vulnerabilidades encontradas para {ip}:")
+            for protocolo in scanner[ip].all_protocols():
+                print(f"[+] Protocólo: {protocolo}")
+                portas = scanner[ip][protocolo].keys()
+                for porta in portas:
+                    print(f"Porta {porta} aberta")
+                    if 'script' in scanner[ip][protocolo][porta]:
+                        for vuln in scanner[ip][protocolo][porta]['script']:
+                            print(f"    Vulnerabilidade detectada: {vuln}")
+        else:
+            print(f"[!] Não foi possível escanear o IP {ip} para vulnerabilidades.")
+    except Exception as e:
+        print(f"[!] Erro ao escanear vulnerabilidades de {ip}:")
+        print(traceback.format_exc())  # Exibe o erro completo
+
+
 def scanner_continuo(rede, duracao):
     """Executa o scanner continuamente até o tempo determinado pelo usuário."""
     fim = datetime.now() + timedelta(minutes=duracao)
@@ -61,6 +83,10 @@ def scanner_continuo(rede, duracao):
                     try:
                         portas = escanear_portas(ip)
                         print(f"IP: {ip} - Portas abertas: {portas if portas else 'Nenhuma'}")
+
+                        # Após escanear as portas, escanear as vulnerabilidades
+                        escanear_vulnerabilidades(ip)
+
                     except Exception as e:
                         print(f"\n[!] Erro ao escanear {ip}:")
                         print(traceback.format_exc())  # Exibe o erro completo
